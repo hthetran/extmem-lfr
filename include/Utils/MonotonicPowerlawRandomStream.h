@@ -61,8 +61,8 @@ protected:
     }
 
 public:
-    MonotonicPowerlawRandomStream(int_t minDegree, int_t maxDegree, double gamma, int_t numberOfNodes)
-        : _uniform_random(numberOfNodes)
+    MonotonicPowerlawRandomStream(int_t minDegree, int_t maxDegree, double gamma, int_t numberOfNodes, seed_t seed)
+        : _uniform_random(numberOfNodes, seed)
         , _min_degree(minDegree)
         , _max_degree(maxDegree)
         , _gamma(gamma)
@@ -77,8 +77,8 @@ public:
         _update();
     }
 
-    MonotonicPowerlawRandomStream(const Parameters& p) :
-        MonotonicPowerlawRandomStream(p.minDegree, p.maxDegree, p.exponent, p.numberOfNodes)
+    MonotonicPowerlawRandomStream(const Parameters& p, seed_t seed) :
+        MonotonicPowerlawRandomStream(p.minDegree, p.maxDegree, p.exponent, p.numberOfNodes, seed)
     {}
 
     bool empty() const {
