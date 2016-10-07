@@ -1,6 +1,7 @@
 #pragma once
 
-#include <stxxl/bits/common/rand.h>
+#include <defs.h>
+#include <random>
 #include <stxxl/bits/common/utils.h>
 
 template <bool Increasing = true>
@@ -10,15 +11,21 @@ public:
 
 private:
     using T = double; // internal floating point rep
-    stxxl::random_uniform_fast _gen;
+
+    STDRandomEngine _rand_gen;
+    std::uniform_real_distribution<double> _rand_distr;
 
     uint_t _elements_left;
     bool _empty;
     value_type _current;
 
 public:
-    MonotonicUniformRandomStream(uint_t elements)
-        : _elements_left(elements), _empty(!elements), _current(Increasing ? 0.0 : 1.0)
+    MonotonicUniformRandomStream(uint_t elements, seed_t seed)
+        : _rand_gen(seed)
+        , _rand_distr(0, 1.0)
+        , _elements_left(elements)
+        , _empty(!elements)
+        , _current(Increasing ? 0.0 : 1.0)
     {++(*this);}
 
     MonotonicUniformRandomStream& operator++() {
@@ -26,10 +33,12 @@ public:
         if (UNLIKELY(!_elements_left)) {
             _empty = true;
         } else {
+            const double rand = _rand_distr(_rand_gen);
+
             if (Increasing) {
-                _current = T(1.0) - (1.0 - _current) * std::pow(T(1.0) - _gen(), 1.0 / T(_elements_left));
+                _current = T(1.0) - (1.0 - _current) * std::pow(T(1.0) - rand, 1.0 / T(_elements_left));
             } else {
-                _current *= std::pow(T(1.0) - _gen(), 1.0 / T(_elements_left));
+                _current *= std::pow(T(1.0) - rand, 1.0 / T(_elements_left));
             }
             _elements_left--;
         }
