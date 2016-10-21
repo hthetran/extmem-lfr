@@ -7,6 +7,7 @@
 #include <Utils/AsyncStream.h>
 #include <Utils/StreamPusher.h>
 #include <Utils/IOStatistics.h>
+#include <Utils/RandomSeed.h>
 
 namespace LFR {
     void LFR::_generate_global_graph(int_t globalSwapsPerIteration) {
@@ -77,7 +78,7 @@ namespace LFR {
             EdgeSwapTFP::SemiLoadedEdgeSwapTFP swapAlgo(_inter_community_edges, globalSwapsPerIteration, _number_of_nodes, _max_memory_usage);
             // Generate swaps
             uint_t numSwaps = 10*_inter_community_edges.size();
-            SwapGenerator swapGen(numSwaps, _inter_community_edges.size(), _seed_seq());
+            SwapGenerator swapGen(numSwaps, _inter_community_edges.size(), RandomSeed::get_instance().get_next_seed());
 
             if (1) {
                 IOStatistics ios("GlobalGenInitialRand");
@@ -89,7 +90,7 @@ namespace LFR {
                 IOStatistics ios("GlobalGenRewire");
 
                 // rewiring in order to not to generate new intra-community edges
-                GlobalRewiringSwapGenerator rewiringSwapGenerator(_community_assignments, _inter_community_edges.size(), _seed_seq());
+                GlobalRewiringSwapGenerator rewiringSwapGenerator(_community_assignments, _inter_community_edges.size(), RandomSeed::get_instance().get_next_seed());
                 _inter_community_edges.rewind();
                 rewiringSwapGenerator.pushEdges(_inter_community_edges);
                 _inter_community_edges.rewind();

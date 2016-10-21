@@ -2,7 +2,16 @@
 #include <EdgeSwaps/EdgeSwapInternalSwapsBase_impl.h>
 #include <Utils/RandomBoolStream.h>
 
+#include <Utils/RandomSeed.h>
+
 void CommunityEdgeRewiringSwaps::run() {
+    std::mt19937_64 gen(RandomSeed::get_instance().get_next_seed());
+    std::minstd_rand fast_gen(RandomSeed::get_instance().get_next_seed());
+    RandomBoolStream _bool_stream(RandomSeed::get_instance().get_next_seed());
+
+    size_t last_edges_found = std::numeric_limits<size_t>::max();
+    unsigned int retry_count = 0;
+
     while (true) {
         // generate vector of struct { community, duplicate edge, partner edge }.
         std::vector<community_swap_edges_t> com_swap_edges;
@@ -15,7 +24,7 @@ void CommunityEdgeRewiringSwaps::run() {
             ++_community_sizes[c];
         };
 
-        std::mt19937 gen(stxxl::get_next_seed());
+        const auto no_edges = _community_edges.size();
 
         { // first pass: load at most max_swaps duplicate edges duplicate edge in com_swap_edges
             edge_community_t last_edge = {0, {-1, -1}};
@@ -38,7 +47,7 @@ void CommunityEdgeRewiringSwaps::run() {
                     assert(com_swap_edges.size() == _edge_ids_in_current_swaps.size());
                 } else if (inDuplicates) {
                     do {
-                        std::uniform_int_distribution<> dis(first_dup, com_swap_edges.size()-1);
+                        std::uniform_int_distribution<int_t> dis(first_dup, com_swap_edges.size()-1);
                         int_t x = dis(gen);
 
                         assert(com_swap_edges.size() == _edge_ids_in_current_swaps.size());
@@ -58,11 +67,24 @@ void CommunityEdgeRewiringSwaps::run() {
 
         community_t numCommunities = _community_sizes.size();
 
-        STXXL_MSG("Found " << com_swap_edges.size() << " duplicates which shall be rewired");
+        STXXL_MSG("Found " << com_swap_edges.size() << " duplicates in "
+                           << no_edges << " edges (" << (100. * com_swap_edges.size() / no_edges ) << "%)"
+                  " which shall be rewired");
 
         // no duplicates found - nothing to do anymore!
-        // FIXME introduce threshold
         if (com_swap_edges.empty()) return;
+
+        if (com_swap_edges.size() == last_edges_found && last_edges_found < no_edges * 1e-3) {
+            if (++retry_count == 5) {
+                std::cout << "CommunityEdgeRewiringSwaps does not converge; give up and delete duplicates" << std::endl;
+                deleteDuplicates();
+                return;
+            }
+        } else {
+            retry_count = 0;
+            last_edges_found = com_swap_edges.size();
+        }
+
 
         // bucket sort of com_swap_edges
         std::vector<uint_t> duplicates_per_community(_community_sizes.size() + 1);
@@ -109,14 +131,12 @@ void CommunityEdgeRewiringSwaps::run() {
 
         // sort swap partners per community in decreasing order
         // and shuffle swaps of same community.
+        const auto tmp_seed = RandomSeed::get_instance().get_next_seed();
         #pragma omp parallel
         {
-
-            std::random_device lrd;
-            std::minstd_rand fast_gen(lrd());
-
             #pragma omp for schedule(guided)
             for (community_t com = 0; com < numCommunities; ++com) {
+                std::minstd_rand fast_gen(RandomSeed::get_instance().get_seed(tmp_seed + com));
                 std::sort(swap_partner_id_per_community.begin() + duplicates_per_community[com], swap_partner_id_per_community.begin() + duplicates_per_community[com+1], std::greater<edgeid_t>());
                 std::shuffle(com_swap_edges.begin() + duplicates_per_community[com], com_swap_edges.begin() + duplicates_per_community[com+1], fast_gen);
             }
@@ -144,13 +164,11 @@ void CommunityEdgeRewiringSwaps::run() {
 
 
         // Shuffle all swaps.
-        std::minstd_rand fast_gen(stxxl::get_next_seed());
         std::shuffle(com_swap_edges.begin(), com_swap_edges.end(), fast_gen);
 
         // generate vector of real swaps with internal ids and internal edge vector.
         _current_swaps.clear();
         _current_swaps.reserve(com_swap_edges.size());
-        RandomBoolStream _bool_stream(stxxl::get_next_seed());
         _edges_in_current_swaps.clear();
         _edges_in_current_swaps.reserve(com_swap_edges.size() * 2);
         _swap_has_successor[0].clear();
@@ -207,6 +225,52 @@ void CommunityEdgeRewiringSwaps::run() {
 
     }
 }
+
+// fallback, if we dont converge -- then just delete duplicates
+void CommunityEdgeRewiringSwaps::deleteDuplicates() {
+    if (UNLIKELY(_community_edges.empty()))
+        return;
+
+    // read old edge vector and merge in updates, write out result
+    stxxl::vector<edge_community_t>::bufreader_type community_edge_reader(_community_edges);
+
+    edge_community_vector_t output_vector;
+    output_vector.reserve(_community_edges.size());
+    edge_community_vector_t::bufwriter_type writer(output_vector);
+
+    STDRandomEngine gen(RandomSeed::get_instance().get_next_seed());
+
+    edge_community_t last_edge = *community_edge_reader;
+    edgeid_t last_edge_occ = 0;
+    edgeid_t edges_written = 1;
+
+    for(++community_edge_reader; !community_edge_reader.empty(); ++community_edge_reader) {
+        const auto & edge = *community_edge_reader;
+
+        if (LIKELY(last_edge.edge != edge.edge)) {
+            if (LIKELY(!edge.edge.is_invalid())) {
+                writer << last_edge;
+                edges_written++;
+            }
+
+            last_edge = edge;
+            last_edge_occ = 1;
+
+        } else {
+            std::uniform_int_distribution<edgeid_t> distr(0, last_edge_occ);
+            last_edge_occ++;
+            if (!distr(gen)) last_edge.community_id = edge.community_id;
+        }
+    }
+
+    writer << last_edge;
+    writer.finish();
+
+    std::cout << "Wrote " << edges_written << " edges, i.e. deleted " << (_community_edges.size() - edges_written) << std::endl;
+
+    _community_edges.swap(output_vector);
+}
+
 
 template <typename Callback>
 void CommunityEdgeRewiringSwaps::loadAndStoreEdges(Callback callback) {

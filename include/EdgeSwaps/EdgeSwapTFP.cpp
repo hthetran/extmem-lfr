@@ -33,7 +33,7 @@ namespace EdgeSwapTFP {
 
         edgeid_t eid = 0; // points to the next edge that can be read
 
-        swapid_t last_swap = 0; // initialize to make gcc shut up
+        swapid_t prev_swap = 0; // initialize to make gcc shut up
 
         stx::btree_map<uint_t, uint_t> swaps_per_edges;
         uint_t swaps_per_edge = 1;
@@ -57,11 +57,11 @@ namespace EdgeSwapTFP {
         #endif
 
         bool first_swap_of_edge = true;
-        // For every edge we send the incident vertices to the first swap,
-        // i.e. the request with the lowest swap-id. We get this info by scanning
-        // through the original edge list and the sorted request list in parallel
-        // (i.e. by "merging" them). If there are multiple requests to an edge, we
-        // send each predecessor the id of the next swap possibly affecting this edge.
+        // For every edge we send the incident vertices to all swaps, requesting it.
+        // We get this info by scanning through the original edge list and the sorted
+        // request list in parallel (i.e. by "merging" them). If there are multiple
+        // requests to an edge, we send each predecessor the id of the next swap
+        // possibly affecting this edge.
         for (; !edge_swap_sorter.empty(); ++edge_swap_sorter) {
             edgeid_t requested_edge;
             swapid_t requesting_swap;
@@ -93,15 +93,15 @@ namespace EdgeSwapTFP {
 
             } else {
                 depchain_edge_sorter.push({requesting_swap, edge});
-                depchain_successor_sorter.push(DependencyChainSuccessorMsg{last_swap, requesting_swap});
-                assert(last_swap < requesting_swap);
-                DEBUG_MSG(_display_debug, "Report to swap " << last_swap << " that swap " << requesting_swap << " needs edge " << requested_edge);
+                depchain_successor_sorter.push(DependencyChainSuccessorMsg{prev_swap, requesting_swap});
+                assert(prev_swap < requesting_swap);
+                DEBUG_MSG(_display_debug, "Report to swap " << prev_swap << " that swap " << requesting_swap << " needs edge " << requested_edge);
 
                 if (compute_stats)
                     swaps_per_edge++;
             }
 
-            last_swap = requesting_swap;
+            prev_swap = requesting_swap;
         }
 
         #ifdef ASYNC_PUSHERS

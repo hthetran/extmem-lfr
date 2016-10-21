@@ -9,6 +9,9 @@
 #include <LFR/LFRCommunityAssignBenchmark.h>
 #include <Utils/export_metis.h>
 
+#include <Utils/RandomSeed.h>
+
+
 class RunConfig {
     void _update_structs() {
         node_distribution_param.exponent = node_gamma;
@@ -63,7 +66,7 @@ public:
         overlapping_nodes(0),
         community_min_members(  25),
         community_max_members(1000),
-        community_gamma(-2.0),
+        community_gamma(-1.0),
         mixing(0.5),
         max_bytes(10*UIntScale::Gi),
         lfr_bench_rounds(100),
@@ -116,7 +119,6 @@ public:
         assert(number_of_communities < std::numeric_limits<community_t>::max());
 
         if (!cp.process(argc, argv)) {
-            cp.print_usage();
             return false;
         }
 
@@ -147,12 +149,12 @@ int main(int argc, char* argv[]) {
 
     stxxl::srandom_number32(config.randomSeed);
     stxxl::set_seed(config.randomSeed);
+    RandomSeed::get_instance().seed(config.randomSeed);
 
     LFR::LFR lfr(config.node_distribution_param,
                  config.community_distribution_param,
                  config.mixing,
-                 config.max_bytes,
-                 stxxl::get_next_seed()
+                 config.max_bytes
     );
 
     LFR::OverlapConfig oconfig;

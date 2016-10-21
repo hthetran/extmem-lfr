@@ -2,6 +2,7 @@
 #include "LFR.h"
 
 #include <Utils/RandomIntervalTree.h>
+#include <Utils/RandomSeed.h>
 
 
 namespace LFR {
@@ -10,12 +11,17 @@ namespace LFR {
 void LFR::_correct_community_sizes() {
     auto & com_sizes = _community_cumulative_sizes;
 
-    if (_degree_distribution_params.maxDegree * (1.0 - _mixing) >= _community_distribution_params.maxDegree) {
-        throw std::runtime_error("Error, the maximum community is too small to fit the node of the highest degree.");
-    }
+    if (_overlap_method == OverlapMethod::constDegree) {
+        // FIX: This is a quite weak bound if not all nodes overlap
+        if (_degree_distribution_params.maxDegree * (1.0 - _mixing) / _overlap_config.constDegree.multiCommunityDegree >=
+            _community_distribution_params.maxDegree) {
+            throw std::runtime_error("Error, the maximum community is too small to fit the node of the highest degree.");
+        }
 
-    if (_degree_distribution_params.minDegree * (1.0 - _mixing) >= _community_distribution_params.minDegree) {
-        throw std::runtime_error("Error, the minimum community size is too small to fit the node of the lowest degree.");
+        if (_degree_distribution_params.minDegree * (1.0 - _mixing) / _overlap_config.constDegree.multiCommunityDegree >=
+            _community_distribution_params.minDegree) {
+            throw std::runtime_error("Error, the minimum community size is too small to fit the node of the lowest degree.");
+        }
     }
 
     bool updated = false;
@@ -140,7 +146,7 @@ void LFR::_compute_community_assignments() {
     RandomIntervalTree<node_t> tree(com_sizes);
     const community_t number_of_communities = com_sizes.size();
     //auto & randGen = _seed_seq;
-    std::mt19937 randGen(_seed_seq());
+    std::mt19937 randGen(RandomSeed::get_instance().get_next_seed());
 
     // find the smallest legal community and then uniformly
     // select it or larger one

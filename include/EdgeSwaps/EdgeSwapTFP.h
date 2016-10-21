@@ -134,7 +134,7 @@ namespace EdgeSwapTFP {
 
 
             MemoryEstimation(const size_t& mem, const swapid_t& no_swaps, const degree_t avg_deg, const size_t& block_size)
-                  : _min_size((stxxl::sort_memory_usage_factor() * 2 + 1) * block_size),
+                  : _min_size(8*(stxxl::sort_memory_usage_factor() * 2 + 1) * block_size),
                     _sizes( _compute(mem, no_swaps, avg_deg, block_size) )
             {}
 
