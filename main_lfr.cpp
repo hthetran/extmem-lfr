@@ -55,6 +55,8 @@ public:
     bool lfr_bench_comassign;
     bool lfr_bench_comassign_retry;
 
+    double community_rewiring_random;
+
     RunConfig() :
         number_of_nodes      (100000),
         number_of_communities( 10000),
@@ -71,7 +73,8 @@ public:
         max_bytes(10*UIntScale::Gi),
         lfr_bench_rounds(100),
         lfr_bench_comassign(false),
-        lfr_bench_comassign_retry(false)
+        lfr_bench_comassign_retry(false),
+        community_rewiring_random(1.0)
     {
         using myclock = std::chrono::high_resolution_clock;
         myclock::duration d = myclock::now() - myclock::time_point::min();
@@ -100,6 +103,7 @@ public:
         cp.add_bytes (CMDLINE_COMP('x', "community-min-members",   community_min_members,   "Minumum community size"));
         cp.add_bytes (CMDLINE_COMP('y', "community-max-members",   community_max_members,   "Maximum community size"));
         cp.add_double(CMDLINE_COMP('z', "community-gamma",         community_gamma,         "Exponent of community size distribution"));
+        cp.add_double(CMDLINE_COMP('r', "community-rewiring-random", community_rewiring_random, "Fraction of addition random swaps to duplicate swaps"));
 
         cp.add_uint  (CMDLINE_COMP('s', "seed",      randomSeed,   "Initial seed for PRNG"));
 
@@ -126,6 +130,22 @@ public:
             std::cerr << "Number of overlapping exceed total number of nodes" << std::endl;
             return false;
         }
+
+        if (community_rewiring_random < 0) {
+            std::cerr << "community-rewiring-random has to be non-negative" << std::endl;
+            return false;
+        }
+
+        if (community_gamma > -1.0) {
+            std::cerr << "community-gamma has to be at most -1" << std::endl;
+            return false;
+        }
+
+        if (node_gamma > -1.0) {
+            std::cerr << "node-gamma has to be at most -1" << std::endl;
+            return false;
+        }
+
 
         cp.print_result();
 
@@ -163,6 +183,8 @@ int main(int argc, char* argv[]) {
 
     lfr.setOverlap(LFR::OverlapMethod::constDegree, oconfig);
 
+    lfr.setCommunityRewiringRandom(config.community_rewiring_random);
+
     if (config.lfr_bench_comassign) {
         LFR::LFRCommunityAssignBenchmark bench(lfr);
         bench.computeDistribution(config.lfr_bench_rounds);
@@ -183,7 +205,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    std::cout << "Maximum EM allocation: " <<  stxxl::block_manager::get_instance()->get_total_allocation() << std::endl;    
+    std::cout << "Maximum EM allocation: " <<  stxxl::block_manager::get_instance()->get_maximum_allocation() << std::endl;
 
     return 0;
 }
