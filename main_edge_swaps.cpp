@@ -163,13 +163,16 @@ void benchmark(RunConfig & config) {
         hh_gen.generate();
 
         StreamPusher<decltype(hh_gen), EdgeStream>(hh_gen, edge_stream);
-        edge_stream.consume();
 
     } else {
+	     IOStatistics cw("Clueweb");
+
         auto stream = read_clueweb_file(config.clueweb);
         std::swap(stream, edge_stream);
     }
 
+
+    edge_stream.consume();
     std::cout << "Generated " << edge_stream.size() << " edges\n";
 
 
@@ -255,6 +258,8 @@ int main(int argc, char* argv[]) {
     stxxl::set_seed(config.randomSeed);
 
     benchmark(config);
+    std::cout << "Maximum EM allocation: " <<  stxxl::block_manager::get_instance()->get_maximum_allocation() << std::endl;    
+
 
     return 0;
 }
