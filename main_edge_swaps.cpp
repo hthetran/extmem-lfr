@@ -45,6 +45,8 @@ struct RunConfig {
     stxxl::uint64 runSize;
     stxxl::uint64 batchSize;
 
+    stxxl::uint64 internalMem;
+
     unsigned int randomSeed;
 
     EdgeSwapAlgo edgeSwapAlgo;
@@ -65,6 +67,7 @@ struct RunConfig {
         , numSwaps(numNodes)
         , runSize(numNodes/10)
         , batchSize(IntScale::Mi)
+        , internalMem(8 * IntScale::Gi)
 
         , verbose(false)
         , factorNoSwaps(-1)
@@ -99,6 +102,8 @@ struct RunConfig {
             cp.add_bytes  (CMDLINE_COMP('m', "num-swaps", numSwaps,   "Number of swaps to perform"));
             cp.add_bytes  (CMDLINE_COMP('r', "run-size", runSize, "Number of swaps per graph scan"));
             cp.add_bytes  (CMDLINE_COMP('k', "batch-size", batchSize, "Batch size of PTFP"));
+
+            cp.add_bytes  (CMDLINE_COMP('i', "ram", internalMem, "Internal memory"));
 
             cp.add_string(CMDLINE_COMP('e', "swap-algo", swap_algo_name, "SwapAlgo to use: IM, SEMI, TFP, PTFP (default)"));
 
@@ -209,7 +214,7 @@ void benchmark(RunConfig & config) {
             }
 
             case TFP: {
-                EdgeSwapTFP::EdgeSwapTFP swap_algo(edge_stream, config.runSize, config.numNodes, 1llu << 34);
+                EdgeSwapTFP::EdgeSwapTFP swap_algo(edge_stream, config.runSize, config.numNodes, config.internalMem);
                 StreamPusher<decltype(swap_gen), decltype(swap_algo)>(swap_gen, swap_algo);
                 swap_algo.run();
                 break;
