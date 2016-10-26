@@ -170,10 +170,15 @@ void benchmark(RunConfig & config) {
         StreamPusher<decltype(hh_gen), EdgeStream>(hh_gen, edge_stream);
 
     } else {
-	     IOStatistics cw("Clueweb");
+        IOStatistics read_report("Read");
+        stxxl::linuxaio_file file(config.clueweb, stxxl::file::DIRECT | stxxl::file::RDONLY);
+        stxxl::vector<edge_t> vector(&file);
+        typename decltype(vector)::bufreader_type reader(vector);
 
-        auto stream = read_clueweb_file(config.clueweb);
-        std::swap(stream, edge_stream);
+        for(; !reader.empty(); ++reader)
+            edge_stream.push(*reader);
+
+        edge_stream.consume();
     }
 
 
