@@ -115,8 +115,8 @@ namespace EdgeSwapTFP {
         constexpr static size_t _pq_pool_mem = PQ_POOL_MEM;
         constexpr static size_t _sorter_mem = SORTER_MEM;
 
-        constexpr static bool compute_stats = true;
-        constexpr static bool produce_debug_vector=true;
+        constexpr static bool compute_stats = false;
+        constexpr static bool produce_debug_vector=false;
         constexpr static bool _async_processing = false;
 
 // memory estimation

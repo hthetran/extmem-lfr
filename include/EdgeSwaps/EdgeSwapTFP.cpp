@@ -857,6 +857,7 @@ namespace EdgeSwapTFP {
     EdgeSwapTFP::MemoryEstimation::_compute(const size_t& mem, const swapid_t& no_swaps, const degree_t& avg_deg) const {
         auto format = [] (const size_t& x) {
             std::string xs = std::to_string(x);
+            return xs;
             std::string ret;
 
             for(int i = xs.size() - 3; i > -3; i -= 3)
@@ -870,7 +871,7 @@ namespace EdgeSwapTFP {
         };
 
 
-        const size_t min_blocks = 2 * (stxxl::sort_memory_usage_factor() * 2 + 1);
+        const size_t min_blocks = 16 * (stxxl::sort_memory_usage_factor() * 2 + 1);
 
         // generated using experiments/memory_consumption.py
         auto estimate = [&] (double a, double b, size_t elem_size, size_t block_size, size_t multi = 1) -> size_block_t  {
