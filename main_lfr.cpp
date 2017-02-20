@@ -7,7 +7,7 @@
 #include <Utils/MonotonicPowerlawRandomStream.h>
 #include <LFR/LFR.h>
 #include <LFR/LFRCommunityAssignBenchmark.h>
-#include <Utils/export_metis.h>
+#include <Utils/export_thrill_binary.h>
 
 #include <Utils/RandomSeed.h>
 
@@ -200,12 +200,13 @@ int main(int argc, char* argv[]) {
         lfr.run();
 
         if (!config.output_filename.empty()) {
-            export_as_metis(lfr.get_edges(), config.node_distribution_param.numberOfNodes, config.output_filename);
+            //export_as_metis(lfr.get_edges(), config.node_distribution_param.numberOfNodes, config.output_filename);
+            export_as_thrill_binary(lfr.get_edges(), config.node_distribution_param.numberOfNodes, config.output_filename);
         }
 
         if (!config.partition_filename.empty()) {
-            std::ofstream output_stream(config.partition_filename, std::ios::trunc);
-            lfr.export_community_assignment(output_stream);
+            std::ofstream output_stream(config.partition_filename, std::ios::trunc | std::ios::binary);
+            lfr.export_community_assignment_binary(output_stream);
             output_stream.close();
         }
     }
