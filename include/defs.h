@@ -40,10 +40,10 @@ using int_t = std::int64_t;
 using uint_t = std::uint64_t;
 
 //using node_t = int_t; ///< Type for every node id used in this project
-using node_t = int64_t;
+using node_t = int32_t;
 constexpr node_t INVALID_NODE = std::numeric_limits<node_t>::max();
 
-using degree_t = int64_t; ///< Type for node degrees
+using degree_t = int32_t; ///< Type for node degrees
 using edgeid_t = int_t; ///< Type used to address edges
 using community_t = int32_t; ///< Type used to address communities
 
