@@ -117,6 +117,9 @@ target_link_libraries(pa_edge_swaps libextmemgraphgen ${STXXL_LIBRARIES} ${Boost
 add_executable(pa_lfr main_lfr.cpp)
 target_link_libraries(pa_lfr libextmemgraphgen ${STXXL_LIBRARIES})
 
+add_executable(compare_graph compare_graph.cpp)
+target_link_libraries(compare_graph ${STXXL_LIBRARIES})
+
 include(CMakeLocal.cmake)
 
 add_subdirectory(test)
