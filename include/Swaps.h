@@ -10,7 +10,7 @@
 #include <cassert>
 #include <tuple>
 
-using swapid_t = uint32_t;
+using swapid_t = uint64_t;
 
 /**
  * @brief Store edge ids and direction describing a swap
