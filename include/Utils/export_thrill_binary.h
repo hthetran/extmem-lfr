@@ -99,16 +99,17 @@ void export_as_thrill_binary(EdgeStream &edges, node_t num_nodes, const std::str
 	std::ofstream out_stream(filename, std::ios::trunc | std::ios::binary);
 	//out_stream << num_nodes << " " << num_edges << " " << 0 << std::endl;
 	
-	std::stack<node_t> neighbors;
+	std::vector<node_t> neighbors;
 	for (node_t u = 0; u < num_nodes; ++u) {
+		neighbors.clear();
 		for (; !edges.empty() && edges->first == u; ++edges) {
-			neighbors.push(edges->second);
+			neighbors.push_back(edges->second);
 		}
 		PutVarint(out_stream, neighbors.size());
-		while (!neighbors.empty()) {
+
+		for (node_t v : neighbors) {
 			static_assert(std::is_same<int32_t, node_t>::value, "Node type is not int32 anymore, adjust code!");
-			out_stream.write(reinterpret_cast<const char*>(&neighbors.top()), 4);
-			neighbors.pop();
+			out_stream.write(reinterpret_cast<const char*>(&v), 4);
 		}
 	}
 
