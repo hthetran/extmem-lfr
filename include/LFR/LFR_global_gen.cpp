@@ -75,6 +75,9 @@ namespace LFR {
             _inter_community_edges.consume();
         }
 
+        std::cout << "Current EM allocation after InitialGlobalGen: " <<  stxxl::block_manager::get_instance()->get_current_allocation() << std::endl;
+        std::cout << "Maximum EM allocation after InitialGlobalGen: " <<  stxxl::block_manager::get_instance()->get_maximum_allocation() << std::endl;
+
         { // regular edge swaps
             EdgeSwapTFP::SemiLoadedEdgeSwapTFP swapAlgo(_inter_community_edges, globalSwapsPerIteration, _number_of_nodes, _max_memory_usage);
             // Generate swaps
@@ -87,6 +90,9 @@ namespace LFR {
                 swapAlgo.run();
             }
 
+            std::cout << "Current EM allocation after GlobalGenInitialRand: " <<  stxxl::block_manager::get_instance()->get_current_allocation() << std::endl;
+            std::cout << "Maximum EM allocation after GlobalGenInitialRand: " <<  stxxl::block_manager::get_instance()->get_maximum_allocation() << std::endl;
+
             {
                 IOStatistics ios("GlobalGenRewire");
 
@@ -96,6 +102,9 @@ namespace LFR {
                 rewiringSwapGenerator.pushEdges(_inter_community_edges);
                 _inter_community_edges.rewind();
                 rewiringSwapGenerator.generate();
+
+                std::cout << "Current EM allocation after GlobalGenRewireInit: " <<  stxxl::block_manager::get_instance()->get_current_allocation() << std::endl;
+                std::cout << "Maximum EM allocation after GlobalGenRewireInit: " <<  stxxl::block_manager::get_instance()->get_maximum_allocation() << std::endl;
 
                 swapAlgo.setUpdatedEdgesCallback([&rewiringSwapGenerator](EdgeSwapTFP::SemiLoadedEdgeSwapTFP::edge_update_sorter_t &updatedEdges) {
                     rewiringSwapGenerator.pushEdges(updatedEdges);
