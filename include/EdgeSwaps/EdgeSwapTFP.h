@@ -202,7 +202,7 @@ namespace EdgeSwapTFP {
 
 // PQ used internally in _simulate_swaps and _perform_swaps
         using DependencyChainEdgeComparatorPQ = typename GenericComparatorStruct<DependencyChainEdgeMsg>::Descending;
-        using DependencyChainEdgePQ = typename stxxl::PRIORITY_QUEUE_GENERATOR<DependencyChainEdgeMsg, DependencyChainEdgeComparatorPQ, _pq_mem, 1 << 20>::result;
+        using DependencyChainEdgePQ = typename stxxl::PRIORITY_QUEUE_GENERATOR<DependencyChainEdgeMsg, DependencyChainEdgeComparatorPQ, _pq_mem, 1 << 24>::result;
         using DependencyChainEdgePQBlock = typename DependencyChainEdgePQ::block_type;
 
         stxxl::read_write_pool<DependencyChainEdgePQBlock> _dependency_chain_pq_pool;
